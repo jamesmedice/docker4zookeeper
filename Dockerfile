@@ -1,4 +1,5 @@
-# Apache Zookeeper @Tiago Medice
+# Apache Zookeeper   
+# Author @Tiago Medice
 
 FROM openjdk:8-jre-alpine
 
