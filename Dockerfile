@@ -17,8 +17,7 @@ RUN apk add --no-cache wget bash
 
 RUN mkdir -p /opt
 
-RUN  \
-  && wget -q -O - ${ZOOKEEPER_MIRROR}/dist/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz | tar -xzf - -C /opt \
+RUN  wget -q -O - ${ZOOKEEPER_MIRROR}/dist/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz | tar -xzf - -C /opt \
   && mv /opt/zookeeper-* /opt/zookeeper \
   && chown -R root:root /opt/zookeeper
 
