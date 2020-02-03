@@ -3,32 +3,36 @@
 
 FROM openjdk:8-jre-alpine
 
-ARG ZOOKEEPER_VERSION=3.4.10
+ARG ZOOKEEPER_VERSION=3.4.13
 ARG ZOOKEEPER_MIRROR=http://www-eu.apache.org
 
 LABEL name="zookeeper" version=${ZOOKEEPER_VERSION}
 
-ADD ./src /
+#Download Zookeeper
+RUN wget -q http://mirror.vorboss.net/apache/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz && \
+wget -q https://www.apache.org/dist/zookeeper/KEYS && \
+wget -q https://www.apache.org/dist/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz.asc && \
+wget -q https://www.apache.org/dist/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz.md5
 
-RUN chmod +x /usr/local/sbin/start.sh
+#Verify download
+RUN md5sum -c zookeeper-${ZOOKEEPER_VERSION}.tar.gz.md5 && \
+gpg --import KEYS && \
+gpg --verify zookeeper-${ZOOKEEPER_VERSION}.tar.gz.asc
 
-RUN apk add --no-cache wget bash
+#Install
+RUN tar -xzf zookeeper-${ZOOKEEPER_VERSION}.tar.gz -C /opt
 
+#Configure
+RUN mv /opt/zookeeper-${ZOOKEEPER_VERSION}/conf/zoo_sample.cfg /opt/zookeeper-${ZOOKEEPER_VERSION}/conf/zoo.cfg
 
-RUN mkdir -p /opt
+ENV JAVA_HOME /usr/lib/jvm/java-7-openjdk-amd64
+ENV ZK_HOME /opt/zookeeper-${ZOOKEEPER_VERSION}
+RUN sed  -i "s|/tmp/zookeeper|$ZK_HOME/data|g" $ZK_HOME/conf/zoo.cfg; mkdir $ZK_HOME/data
 
-RUN  wget -q -O - ${ZOOKEEPER_MIRROR}/dist/zookeeper/zookeeper-${ZOOKEEPER_VERSION}/zookeeper-${ZOOKEEPER_VERSION}.tar.gz | tar -xzf - -C /opt \
-  && mv /opt/zookeeper-* /opt/zookeeper \
-  && chown -R root:root /opt/zookeeper
-
-RUN mkdir -p /var/lib/zookeeper
-
-RUN addgroup -S zookeeper \
-  && adduser -h /var/lib/zookeeper -G zookeeper -S -H -s /sbin/nologin zookeeper \
-  && chown -R zookeeper:zookeeper /var/lib/zookeeper
-
+ADD start-zk.sh /usr/bin/start-zk.sh 
 EXPOSE 2181 2888 3888
 
-VOLUME ["/opt/zookeeper/conf", "/var/lib/zookeeper"]
+WORKDIR /opt/zookeeper-${ZOOKEEPER_VERSION}
+VOLUME ["/opt/zookeeper-${ZOOKEEPER_VERSION}/conf", "/opt/zookeeper-${ZOOKEEPER_VERSION}/data"]
 
-ENTRYPOINT ["/usr/local/sbin/start.sh"]
+CMD /usr/sbin/sshd && bash /usr/bin/start-zk.sh
